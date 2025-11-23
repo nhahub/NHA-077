@@ -1,1 +1,5 @@
 Ready_Models/model_vgg16.h5
+Model_app/*.h5
+*.keras
+*.pkl
+.gitignore
