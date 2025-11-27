@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import HTMLResponse
 import uvicorn
 from tensorflow.keras.models import load_model
 
@@ -87,8 +88,16 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="EuroSAT Classifier API", lifespan=lifespan)
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def root():
+    html_file = SCRIPT_DIR / "index.html"
+    if html_file.exists():
+        return html_file.read_text(encoding="utf-8")
+    return "<h1>EuroSAT Classifier API</h1><p>Place index.html in API folder for web interface</p>"
+
+
+@app.get("/api")
+def api_info():
     return {
         "status": "ok",
         "model": model_path.name if model_path else None,

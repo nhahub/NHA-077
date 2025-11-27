@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DataForge Satellite Land Type Classifier</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="https://media.discordapp.net/attachments/606392080603938826/1443714249775124660/zone.png?ex=692a132c&is=6928c1ac&hm=b55dabd2d052f2b6e5d8f074d0daee54b751f12ef39c988ccc0678a4c6f3aec3&=&format=webp&quality=lossless" type="image/png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #111;
+            color: #ddd;
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .top-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #1a1a1a;
+            padding: 16px 20px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+            border-bottom: 1px solid #222;
+            color: #f2f2f2;
+        }
+        .top-banner img { height: 30px; vertical-align: middle; margin-right: 8px; }
+
+        .container {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: 80px;
+            width: 100%;
+            max-width: 480px;
+            border: 1px solid #222;
+        }
+
+        h1 { font-size: 22px; margin-bottom: 8px; color: #eee; }
+        .info { color: #aaa; font-size: 14px; margin-bottom: 20px; }
+
+        .upload-area {
+            border: 2px dashed #333;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-bottom: 20px;
+            color: #888;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: #666;
+            background: #191919;
+        }
+
+        input[type="file"] { display: none; }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #333;
+            color: #ddd;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover { background: #444; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #preview {
+            max-width: 100%;
+            border-radius: 6px;
+            margin: 20px 0 5px 0;
+            display: none;
+            border: 1px solid #333;
+        }
+
+        #filename {
+            color: #aaa;
+            font-size: 14px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #151515;
+            border-radius: 8px;
+            display: none;
+            border: 1px solid #222;
+        }
+
+        .prediction { font-size: 20px; font-weight: bold; margin-bottom: 6px; color: #e2e2e2; }
+        .confidence { font-size: 15px; color: #8ac27a; margin-bottom: 12px; }
+        .probabilities { font-size: 13px; color: #999; }
+
+        .prob-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #222;
+            align-items: center;
+        }
+
+        .prob-bar {
+            width: 60%;
+            height: 6px;
+            background: #222;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+
+        .prob-fill {
+            height: 100%;
+            background: #555;
+            transition: width 0.3s;
+        }
+
+        .loading {
+            text-align: center;
+            color: #bbb;
+            display: none;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-banner">
+        <img src="https://media.discordapp.net/attachments/606392080603938826/1443718185491894353/anvil.png?ex=692a16d6&is=6928c556&hm=ccf2ed33a654e7619209b897a6cb1704ba0ad6e89fce31ca6fcbe28bc0958bbd&=&format=webp&quality=lossless" alt="Logo" />
+        DataForge Satellite Land Type Classifier
+    </div>
+
+    <div class="container">
+        <h1>Upload Satellite Image</h1>
+        <p class="info">Select or drop an image for classification</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Click or drag an image here</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <img id="preview" alt="Preview">
+        <div id="filename"></div>
+
+        <button id="predictBtn" disabled>Predict</button>
+
+        <div class="loading" id="loading">Processing...</div>
+
+        <div id="result"></div>
+    </div>
+
+<script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+    const filenameBox = document.getElementById('filename');
+    const predictBtn = document.getElementById('predictBtn');
+    const loading = document.getElementById('loading');
+    const result = document.getElementById('result');
+    let selectedFile = null;
+
+    uploadArea.onclick = () => fileInput.click();
+
+    uploadArea.ondragover = (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    };
+    uploadArea.ondragleave = () => uploadArea.classList.remove('dragover');
+
+    uploadArea.ondrop = (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            handleFile(e.dataTransfer.files[0]);
+        }
+    };
+
+    fileInput.onchange = (e) => {
+        if (e.target.files.length) handleFile(e.target.files[0]);
+    };
+
+    function handleFile(file) {
+        selectedFile = file;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+
+            // Show filename
+            filenameBox.innerText = file.name;
+            filenameBox.style.display = 'block';
+
+            predictBtn.disabled = false;
+            result.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    predictBtn.onclick = async () => {
+        if (!selectedFile) return;
+
+        predictBtn.disabled = true;
+        loading.style.display = 'block';
+        result.style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || 'Prediction failed');
+
+            result.innerHTML = `
+                <div class="prediction">${data.predicted_label}</div>
+                <div class="confidence">Confidence: ${(data.confidence * 100).toFixed(2)}%</div>
+                <div class="probabilities">
+                    ${data.probabilities.slice(0, 5).map(p => `
+                        <div class="prob-item">
+                            <span>${p.label}</span>
+                            <div class="prob-bar">
+                                <div class="prob-fill" style="width: ${p.probability * 100}%"></div>
+                            </div>
+                            <span>${(p.probability * 100).toFixed(1)}%</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            result.style.display = 'block';
+
+        } catch (error) {
+            result.innerHTML = `<div style="color:#c77;">Error: ${error.message}</div>`;
+            result.style.display = 'block';
+        } finally {
+            loading.style.display = 'none';
+            predictBtn.disabled = false;
+        }
+    };
+</script>
+
+</body>
+</html>
