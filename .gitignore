@@ -3,3 +3,4 @@ Model_app/*.h5
 *.keras
 *.pkl
 .gitignore
+__pycache__
