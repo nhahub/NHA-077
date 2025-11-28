@@ -34,6 +34,9 @@ def find_models():
 
 def load_model_file(path: Path):
     """Load model from .keras or .pkl file."""
+    if not path.exists():
+        raise FileNotFoundError(f"Model file does not exist: {path}")
+    
     if path.suffix == ".keras":
         return load_model(str(path))
     elif path.suffix == ".pkl":
@@ -59,30 +62,103 @@ def preprocess_image(img: Image.Image, size: int):
     return np.expand_dims(arr, axis=0)
 
 
+def download_model_from_gdrive(file_id, dest):
+    """Download model from Google Drive with error handling."""
+    import gdown
+    
+    # Create directory if it doesn't exist
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    
+    url = f"https://drive.google.com/uc?id={file_id}"
+    print(f"Downloading from: {url}")
+    print(f"Destination: {dest}")
+    
+    try:
+        output = gdown.download(url, str(dest), quiet=False, fuzzy=True)
+        
+        if output is None:
+            raise RuntimeError(f"gdown.download returned None for {dest.name}")
+        
+        if not dest.exists():
+            raise RuntimeError(f"File was not created at {dest}")
+        
+        file_size = dest.stat().st_size
+        print(f"Successfully downloaded {dest.name} ({file_size} bytes)")
+        
+        if file_size < 1000:  # Suspiciously small file
+            print(f"WARNING: Downloaded file is very small ({file_size} bytes)")
+            print(f"Content preview: {dest.read_text()[:200]}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"ERROR downloading {dest.name}: {e}")
+        if dest.exists():
+            dest.unlink()  # Remove partial/corrupted file
+        return False
+
+
+MODEL_FILES = [
+    (MODELS_DIR / "model_vgg16.keras", "1k6qymM6gBIBuLBLhTx3ufRXjRewXu82v"),
+    (MODELS_DIR / "sequential_model.keras", "16db17DZc4dXDmot4P2rJt5ObswKacn6-"),
+]
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup and shutdown logic."""
     global model, model_path, input_size
-    
-    # Startup
+
+    # Check for environment-specified model path
     env_path = os.getenv("MODEL_PATH")
     if env_path and Path(env_path).exists():
         model_path = Path(env_path)
+        print(f"Using model from MODEL_PATH: {model_path}")
     else:
+        # Download models if they don't exist
+        print(f"Models directory: {MODELS_DIR}")
+        print(f"Models directory exists: {MODELS_DIR.exists()}")
+        
+        for local_path, file_id in MODEL_FILES:
+            if not local_path.exists():
+                print(f"\nModel {local_path.name} not found locally.")
+                print("Downloading from Google Drive...")
+                success = download_model_from_gdrive(file_id, local_path)
+                if not success:
+                    print(f"Failed to download {local_path.name}")
+            else:
+                print(f"Model {local_path.name} already exists ({local_path.stat().st_size} bytes)")
+        
+        # Find available models
         models = find_models()
+        print(f"\nAvailable models: {[m.name for m in models]}")
+        
         if not models:
-            raise RuntimeError(f"No models found in {MODELS_DIR}")
+            raise RuntimeError(
+                "No models available. Download failed or models directory is empty.\n"
+                f"Models directory: {MODELS_DIR}\n"
+                f"Directory exists: {MODELS_DIR.exists()}\n"
+                f"Directory contents: {list(MODELS_DIR.glob('*')) if MODELS_DIR.exists() else 'N/A'}"
+            )
+        
         model_path = models[0]
+
+    print(f"\nLoading model: {model_path}")
+    print(f"File exists: {model_path.exists()}")
+    print(f"File size: {model_path.stat().st_size if model_path.exists() else 'N/A'}")
     
-    print(f"Loading: {model_path}")
-    model = load_model_file(model_path)
-    input_size = get_input_size(model)
-    print(f"[/] Loaded: {model_path.name} ({input_size}x{input_size})")
-    
+    try:
+        model = load_model_file(model_path)
+        input_size = get_input_size(model)
+        print(f"[/] Successfully loaded: {model_path.name} ({input_size}x{input_size})")
+    except Exception as e:
+        print(f"[x] Failed to load model: {e}")
+        raise
+
     yield
     
-    # Shutdown
+    # Cleanup
     model = None
+    print("Application shutdown complete")
 
 
 app = FastAPI(title="EuroSAT Classifier API", lifespan=lifespan)
