@@ -61,6 +61,22 @@ def preprocess_image(img: Image.Image, size: int):
     arr = np.asarray(img, dtype=np.float32) / 255.0
     return np.expand_dims(arr, axis=0)
 
+def download_model_from_gdrive(file_id, dest):
+    import gdown
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    url = f"https://drive.google.com/uc?id={file_id}"
+    gdown.download(url, str(dest), quiet=False)
+
+MODEL_FILES = [
+    (MODELS_DIR / "model_vgg16.keras", "1k6qymM6gBIBuLBLhTx3ufRXjRewXu82v"),
+    (MODELS_DIR / "sequential_model.keras", "16db17DZc4dXDmot4P2rJt5ObswKacn6-")
+]
+
+def download_model_from_gdrive(file_id, dest):
+    import gdown
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    url = f"https://drive.google.com/uc?id={file_id}"
+    gdown.download(url, str(dest), quiet=False)
 
 def download_model_from_gdrive(file_id, dest):
     """Download model from Google Drive with error handling."""
