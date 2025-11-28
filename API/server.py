@@ -162,9 +162,9 @@ async def lifespan(app: FastAPI):
     try:
         model = load_model_file(model_path)
         input_size = get_input_size(model)
-        print(f"[/] Successfully loaded: {model_path.name} ({input_size}x{input_size})")
+        print(f"✓ Successfully loaded: {model_path.name} ({input_size}x{input_size})")
     except Exception as e:
-        print(f"[x] Failed to load model: {e}")
+        print(f"✗ Failed to load model: {e}")
         raise
 
     yield
