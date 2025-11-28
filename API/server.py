@@ -61,22 +61,6 @@ def preprocess_image(img: Image.Image, size: int):
     arr = np.asarray(img, dtype=np.float32) / 255.0
     return np.expand_dims(arr, axis=0)
 
-def download_model_from_gdrive(file_id, dest):
-    import gdown
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    url = f"https://drive.google.com/uc?id={file_id}"
-    gdown.download(url, str(dest), quiet=False)
-
-MODEL_FILES = [
-    (MODELS_DIR / "model_vgg16.keras", "1k6qymM6gBIBuLBLhTx3ufRXjRewXu82v"),
-    (MODELS_DIR / "sequential_model.keras", "16db17DZc4dXDmot4P2rJt5ObswKacn6-")
-]
-
-def download_model_from_gdrive(file_id, dest):
-    import gdown
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    url = f"https://drive.google.com/uc?id={file_id}"
-    gdown.download(url, str(dest), quiet=False)
 
 def download_model_from_gdrive(file_id, dest):
     """Download model from Google Drive with error handling."""
@@ -124,19 +108,32 @@ MODEL_FILES = [
 async def lifespan(app: FastAPI):
     global model, model_path, input_size
 
+    # Check for ignore_local_copy flag
+    ignore_local = True
+    if ignore_local:
+        print("IGNORE_LOCAL_COPY flag is set - will re-download models")
+
     # Check for environment-specified model path
     env_path = os.getenv("MODEL_PATH")
     if env_path and Path(env_path).exists():
         model_path = Path(env_path)
         print(f"Using model from MODEL_PATH: {model_path}")
     else:
-        # Download models if they don't exist
+        # Download models if they don't exist or if ignore_local is set
         print(f"Models directory: {MODELS_DIR}")
         print(f"Models directory exists: {MODELS_DIR.exists()}")
         
         for local_path, file_id in MODEL_FILES:
-            if not local_path.exists():
-                print(f"\nModel {local_path.name} not found locally.")
+            should_download = not local_path.exists() or ignore_local
+            
+            if should_download:
+                if local_path.exists() and ignore_local:
+                    print(f"\nModel {local_path.name} exists but IGNORE_LOCAL_COPY is set.")
+                    print(f"Removing existing file and re-downloading...")
+                    local_path.unlink()
+                else:
+                    print(f"\nModel {local_path.name} not found locally.")
+                
                 print("Downloading from Google Drive...")
                 success = download_model_from_gdrive(file_id, local_path)
                 if not success:
