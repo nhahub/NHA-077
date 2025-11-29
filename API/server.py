@@ -9,7 +9,9 @@ from PIL import Image
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
 import uvicorn
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model #type: ignore
+import gdown #type: ignore
+
 
 # Configuration
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -63,10 +65,8 @@ def preprocess_image(img: Image.Image, size: int):
 
 
 def download_model_from_gdrive(file_id, dest):
-    """Download model from Google Drive with error handling."""
-    import gdown
+    """Download model from Google Drive"""
     
-    # Create directory if it doesn't exist
     dest.parent.mkdir(parents=True, exist_ok=True)
     
     url = f"https://drive.google.com/uc?id={file_id}"
@@ -85,7 +85,7 @@ def download_model_from_gdrive(file_id, dest):
         file_size = dest.stat().st_size
         print(f"Successfully downloaded {dest.name} ({file_size} bytes)")
         
-        if file_size < 1000:  # Suspiciously small file
+        if file_size < 1000:
             print(f"WARNING: Downloaded file is very small ({file_size} bytes)")
             print(f"Content preview: {dest.read_text()[:200]}")
         
@@ -108,7 +108,6 @@ MODEL_FILES = [
 async def lifespan(app: FastAPI):
     global model, model_path, input_size
 
-    # Check for ignore_local_copy flag
     ignore_local = True
     if ignore_local:
         print("IGNORE_LOCAL_COPY flag is set - will re-download models")
@@ -156,15 +155,15 @@ async def lifespan(app: FastAPI):
         model_path = models[0]
 
     print(f"\nLoading model: {model_path}")
-    print(f"File exists: {model_path.exists()}")
-    print(f"File size: {model_path.stat().st_size if model_path.exists() else 'N/A'}")
+    print(f"File exists: {model_path.exists()}") #type: ignore
+    print(f"File size: {model_path.stat().st_size if model_path.exists() else 'N/A'}") #type: ignore
     
     try:
-        model = load_model_file(model_path)
+        model = load_model_file(model_path) #type: ignore
         input_size = get_input_size(model)
-        print(f"✓ Successfully loaded: {model_path.name} ({input_size}x{input_size})")
+        print(f"[/] Successfully loaded: {model_path.name} ({input_size}x{input_size})") #type: ignore
     except Exception as e:
-        print(f"✗ Failed to load model: {e}")
+        print(f"[x] Failed to load model: {e}")
         raise
 
     yield
@@ -223,7 +222,7 @@ async def predict(file: UploadFile = File(...)):
         raise HTTPException(400, f"Failed to read image: {e}")
     
     try:
-        x = preprocess_image(img, input_size)
+        x = preprocess_image(img, input_size) #type: ignore
         probs = model.predict(x, verbose=0)[0]
         top_idx = int(np.argmax(probs))
         
