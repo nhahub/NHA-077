@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse
 import uvicorn
 from tensorflow.keras.models import load_model #type: ignore
 import gdown #type: ignore
-
+from ensemble import EnsembleModel
 
 # Configuration
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -60,7 +60,7 @@ def get_input_size(model):
 def preprocess_image(img: Image.Image, size: int):
     """Preprocess image for model prediction."""
     img = img.convert("RGB").resize((size, size))
-    arr = np.asarray(img, dtype=np.float32) / 255.0
+    arr = np.asarray(img, dtype=np.float32)
     return np.expand_dims(arr, axis=0)
 
 
@@ -101,6 +101,7 @@ def download_model_from_gdrive(file_id, dest):
 MODEL_FILES = [
     (MODELS_DIR / "model_vgg16.keras", "1k6qymM6gBIBuLBLhTx3ufRXjRewXu82v"),
     (MODELS_DIR / "sequential_model.keras", "16db17DZc4dXDmot4P2rJt5ObswKacn6-"),
+    (MODELS_DIR / "model_resnet50.keras", "1-9kGrd5behTpTFA9QYmREa5Pf5Phr9207"),
 ]
 
 
@@ -117,6 +118,16 @@ async def lifespan(app: FastAPI):
     if env_path and Path(env_path).exists():
         model_path = Path(env_path)
         print(f"Using model from MODEL_PATH: {model_path}")
+        
+        print(f"\nLoading model: {model_path}")
+        try:
+            model = load_model_file(model_path)
+            input_size = get_input_size(model)
+            print(f"[/] Successfully loaded: {model_path.name} ({input_size}x{input_size})")
+        except Exception as e:
+            print(f"[x] Failed to load model: {e}")
+            raise
+
     else:
         # Download models if they don't exist or if ignore_local is set
         print(f"Models directory: {MODELS_DIR}")
@@ -152,19 +163,16 @@ async def lifespan(app: FastAPI):
                 f"Directory contents: {list(MODELS_DIR.glob('*')) if MODELS_DIR.exists() else 'N/A'}"
             )
         
-        model_path = models[0]
-
-    print(f"\nLoading model: {model_path}")
-    print(f"File exists: {model_path.exists()}") #type: ignore
-    print(f"File size: {model_path.stat().st_size if model_path.exists() else 'N/A'}") #type: ignore
-    
-    try:
-        model = load_model_file(model_path) #type: ignore
-        input_size = get_input_size(model)
-        print(f"[/] Successfully loaded: {model_path.name} ({input_size}x{input_size})") #type: ignore
-    except Exception as e:
-        print(f"[x] Failed to load model: {e}")
-        raise
+        # Initialize Ensemble
+        print(f"\nInitializing Ensemble...")
+        try:
+            model = EnsembleModel(models)
+            model.load_models()
+            input_size = 224 # Default for ensemble
+            print(f"[/] Ensemble initialized with {len(model.models)} models")
+        except Exception as e:
+            print(f"[x] Failed to load ensemble: {e}")
+            raise
 
     yield
     
@@ -188,7 +196,7 @@ def root():
 def api_info():
     return {
         "status": "ok",
-        "model": model_path.name if model_path else None,
+        "model": "Ensemble" if isinstance(model, EnsembleModel) else (model_path.name if model_path else None),
         "input_size": f"{input_size}x{input_size}" if input_size else None,
         "classes": len(CLASS_NAMES)
     }
@@ -203,8 +211,14 @@ def get_labels():
 def list_models():
     return {
         "available": [m.name for m in find_models()],
-        "current": model_path.name if model_path else None
+        "current": "Ensemble" if isinstance(model, EnsembleModel) else (model_path.name if model_path else None)
     }
+
+@app.get("/ensemble-info")
+def ensemble_info():
+    if model and hasattr(model, "get_config"):
+        return model.get_config()
+    return {"error": "Ensemble model not loaded or using single model"}
 
 
 @app.post("/predict")
