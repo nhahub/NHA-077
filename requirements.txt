@@ -6,3 +6,6 @@ tensorflow
 requests
 python-multipart
 gdown
+scikit-learn
+matplotlib
+seaborn

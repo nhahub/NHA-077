@@ -5,9 +5,7 @@ from pathlib import Path
 from tensorflow.keras.models import load_model #type: ignore
 from tensorflow.keras.applications.resnet50 import preprocess_input as resnet_preprocess #type: ignore
 from tensorflow.keras.utils import image_dataset_from_directory #type: ignore
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+
 import tensorflow as tf
 
 def standard_preprocess(x):
@@ -130,6 +128,9 @@ class EnsembleModel:
 
 
 if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
     # Setup paths
     BASE_DIR = Path(__file__).parent.resolve()
     MODELS_DIR = BASE_DIR / "Models"
