@@ -9,8 +9,8 @@
 
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #111;
-            color: #ddd;
+            background: #e6eaea;
+            color: #131444;
             min-height: 100vh;
             display: flex;
             align-items: flex-start;
@@ -23,44 +23,45 @@
             top: 0;
             left: 0;
             width: 100%;
-            background: #1a1a1a;
+            background: #f6a243;
             padding: 16px 20px;
             text-align: center;
             font-size: 20px;
             font-weight: 600;
-            border-bottom: 1px solid #222;
-            color: #f2f2f2;
+            border-bottom: 2px solid #6ba9d7;
+            color: #131444;
         }
         .top-banner img { height: 30px; vertical-align: middle; margin-right: 8px; }
 
         .container {
-            background: #1a1a1a;
+            background: #ffffff;
             padding: 30px;
             border-radius: 10px;
             margin-top: 80px;
             width: 100%;
             max-width: 480px;
-            border: 1px solid #222;
+            border: 2px solid #6ba9d7;
         }
 
-        h1 { font-size: 22px; margin-bottom: 8px; color: #eee; }
-        .info { color: #aaa; font-size: 14px; margin-bottom: 20px; }
+        h1 { font-size: 22px; margin-bottom: 8px; color: #131444; }
+        .info { color: #444; font-size: 14px; margin-bottom: 20px; }
 
         .upload-area {
-            border: 2px dashed #333;
+            border: 2px dashed #6ba9d7;
             border-radius: 8px;
             padding: 40px;
             text-align: center;
             cursor: pointer;
             transition: 0.2s;
             margin-bottom: 20px;
-            color: #888;
+            color: #131444;
+            background: #e6eaea;
         }
 
         .upload-area:hover,
         .upload-area.dragover {
-            border-color: #666;
-            background: #191919;
+            border-color: #f6a243;
+            background: #d9e3e3;
         }
 
         input[type="file"] { display: none; }
@@ -68,27 +69,27 @@
         button {
             width: 100%;
             padding: 14px;
-            background: #333;
-            color: #ddd;
+            background: #f6a243;
+            color: #131444;
             border: none;
             border-radius: 6px;
             font-size: 15px;
             cursor: pointer;
             transition: 0.2s;
         }
-        button:hover { background: #444; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button:hover { background: #e48e32; }
+        button:disabled { opacity: .5; cursor: not-allowed; }
 
         #preview {
             max-width: 100%;
             border-radius: 6px;
             margin: 20px 0 5px 0;
             display: none;
-            border: 1px solid #333;
+            border: 1px solid #6ba9d7;
         }
 
         #filename {
-            color: #aaa;
+            color: #131444;
             font-size: 14px;
             margin-bottom: 15px;
             display: none;
@@ -97,28 +98,28 @@
         #result {
             margin-top: 20px;
             padding: 20px;
-            background: #151515;
+            background: #e6eaea;
             border-radius: 8px;
             display: none;
-            border: 1px solid #222;
+            border: 2px solid #6ba9d7;
         }
 
-        .prediction { font-size: 20px; font-weight: bold; margin-bottom: 6px; color: #e2e2e2; }
-        .confidence { font-size: 15px; color: #8ac27a; margin-bottom: 12px; }
-        .probabilities { font-size: 13px; color: #999; }
+        .prediction { font-size: 20px; font-weight: bold; margin-bottom: 6px; color: #131444; }
+        .confidence { font-size: 15px; color: #131444; margin-bottom: 12px; }
+        .probabilities { font-size: 13px; color: #131444; }
 
         .prob-item {
             display: flex;
             justify-content: space-between;
             padding: 6px 0;
-            border-bottom: 1px solid #222;
+            border-bottom: 1px solid #6ba9d7;
             align-items: center;
         }
 
         .prob-bar {
             width: 60%;
             height: 6px;
-            background: #222;
+            background: #d3dfe6;
             border-radius: 3px;
             overflow: hidden;
             margin: 0 10px;
@@ -126,13 +127,13 @@
 
         .prob-fill {
             height: 100%;
-            background: #555;
+            background: #6ba9d7;
             transition: width 0.3s;
         }
 
         .loading {
             text-align: center;
-            color: #bbb;
+            color: #131444;
             display: none;
             margin: 20px 0;
         }
@@ -141,7 +142,7 @@
 <body>
 
     <div class="top-banner">
-        <img src="https://i.ibb.co/SwNw9SLv/anvil.png" alt="Logo" />
+        <img src="https://i.ibb.co/21nnPpDw/anvil-Dark.png" alt="Logo" />
         DataForge Satellite Land Type Classifier
     </div>
 
