@@ -237,15 +237,17 @@
                 <div class="prediction">${data.predicted_label}</div>
                 <div class="confidence">Confidence: ${(data.confidence * 100).toFixed(2)}%</div>
                 <div class="probabilities">
-                    ${data.probabilities.slice(0, 5).map(p => `
-                        <div class="prob-item">
-                            <span>${p.label}</span>
-                            <div class="prob-bar">
-                                <div class="prob-fill" style="width: ${p.probability * 100}%"></div>
+                    ${data.probabilities
+                        .sort((a,b) => b.probability - a.probability)
+                        .map(p => `
+                            <div class="prob-item">
+                                <span>${p.label}</span>
+                                <div class="prob-bar">
+                                    <div class="prob-fill" style="width: ${p.probability * 100}%"></div>
+                                </div>
+                                <span>${(p.probability * 100).toFixed(1)}%</span>
                             </div>
-                            <span>${(p.probability * 100).toFixed(1)}%</span>
-                        </div>
-                    `).join('')}
+                        `).join('')}
                 </div>
             `;
             result.style.display = 'block';
